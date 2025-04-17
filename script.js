@@ -7,7 +7,7 @@ const firebaseConfig = {
     storageBucket: "sathi-6c556.firebasestorage.app",
     messagingSenderId: "560385393645",
     appId: "1:560385393645:web:b924700f4671efccd2dde4"
-  };
+};
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -17,6 +17,17 @@ function showSection(sectionId) {
     document.querySelectorAll(".container").forEach(div => div.style.display = "none");
     document.getElementById(sectionId).style.display = "block";
 }
+
+function showSuccessPopup(message) {
+    const popup = document.getElementById("popupOverlay");
+    document.getElementById("popupMessage").innerText = message;
+    popup.style.display = "flex";
+    setTimeout(() => popup.style.display = "none", 3000);
+}
+
+document.getElementById("popupClose").addEventListener("click", () => {
+    document.getElementById("popupOverlay").style.display = "none";
+});
 
 function registerLogin() {
     const username = document.getElementById("username").value.trim();
@@ -51,7 +62,7 @@ function startSession(username) {
     document.getElementById("navBar").style.display = "flex";
     showSection("dashboard");
     document.getElementById("displayUsername").innerText = username;
-    document.getElementById("refLink").value = `https://yourdomain.com/?ref=${username}`;
+    document.getElementById("refLink").value = `https://hondacarsrealearningplatform.netlify.app/?ref=${username}`;
 
     db.ref("users/" + username).on("value", snap => {
         const data = snap.val();
@@ -65,6 +76,8 @@ function startSession(username) {
             txList.appendChild(li);
         }
     });
+
+    updateEarningPage();
 }
 
 function logout() {
@@ -87,7 +100,8 @@ function buyPlan(planId, cost, daily) {
             userRef.update({ balance: data.balance - cost });
             userRef.child("transactions").push(`-${cost} Plan ${planId}`);
             db.ref("plans/" + currentUser).set({ planId, dailyProfit: daily, daysLeft: 100 });
-            alert("Plan subscribed!");
+            showSuccessPopup("✅ Plan subscribed successfully!");
+            updateEarningPage();
         } else alert("Insufficient balance");
     });
 }
@@ -97,13 +111,14 @@ function submitRechargeRequest() {
     const trxId = document.getElementById("trxId").value;
     if (tillId && trxId) return alert("Fill only one method");
     if (!tillId && !trxId) return alert("Provide either TILL ID or TRX ID");
-
+   
     const method = tillId ? "jazzcash" : "easypaisa";
     const amount = tillId ? 500 : 900;
     const ref = db.ref("rechargeRequests").push();
     ref.set({ user: currentUser, method, id: tillId || trxId, amount, status: "pending" });
-    alert("Recharge request submitted");
+    showSuccessPopup("✅ Recharge request submitted! Wait for admin approval");
 }
+
 function submitWithdrawRequest() {
     const amount = parseInt(document.getElementById("withdrawAmount").value);
     const holder = document.getElementById("withdrawHolder").value;
@@ -111,8 +126,19 @@ function submitWithdrawRequest() {
     if (!amount || !holder || !number) return alert("Fill all fields");
 
     db.ref("withdrawRequests").push({ user: currentUser, amount, holder, number, status: "pending" });
-    alert("Withdraw request submitted");
+    showSuccessPopup("✅ Withdraw request submitted! Wait for admin approval.");
 }
+function showSuccessPopup(message) {
+    const popup = document.getElementById("successPopup");
+    popup.textContent = message;
+    popup.classList.add("show");
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+      popup.classList.remove("show");
+    }, 3000);
+  }
+  
 function receiveProfit() {
     const userRef = db.ref("users/" + currentUser);
     const planRef = db.ref("plans/" + currentUser);
@@ -140,9 +166,11 @@ function receiveProfit() {
             daysLeft: plan.daysLeft - 1
         });
 
-        alert("Daily profit added to your balance!");
+        showSuccessPopup("✅ Daily profit added to your balance!");
+        updateEarningPage();
     });
 }
+
 function loadAdminPanel() {
     const pass = document.getElementById("adminPass").value;
     if (pass !== "Lavaithan") return alert("Wrong admin password");
@@ -174,18 +202,22 @@ function approveRecharge(id, user, amount) {
     db.ref("users/" + user + "/balance").transaction(b => (b || 0) + amount);
     db.ref("users/" + user + "/transactions").push("+" + amount + " Recharge Approved");
     db.ref("rechargeRequests/" + id + "/status").set("success");
+    showSuccessPopup("✅ Recharge approved for " + user);
 }
 
-
-
-
-
-
-
-
-
-
-
+function updateEarningPage() {
+    const planRef = db.ref("plans/" + currentUser);
+    planRef.once("value", snapshot => {
+        const plan = snapshot.val();
+        if (plan) {
+            document.getElementById("planName").innerText = `Plan ${plan.planId}`;
+            document.getElementById("dailyProfit").innerText = plan.dailyProfit;
+        } else {
+            document.getElementById("planName").innerText = "No Active Plan";
+            document.getElementById("dailyProfit").innerText = "0";
+        }
+    });
+}
 
 setInterval(() => {
     db.ref("plans").once("value", snap => {
