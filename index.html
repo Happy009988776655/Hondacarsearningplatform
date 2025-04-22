@@ -2,8 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Honda Cars Investment</title>
-    <style> /* General Styling */
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        /* General Styling */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #eef2f3;
@@ -12,8 +16,36 @@
             color: #333;
         }
         
+        /* Loading Spinner */
+        .loader {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3a7bd5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         /* Navigation Bar */
-        .nav {
+        .navbar {
             background: linear-gradient(to right, #3a7bd5, #00d2ff);
             padding: 15px 20px;
             display: flex;
@@ -21,23 +53,77 @@
             align-items: center;
             color: white;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            position: relative;
         }
         
-        .nav div:first-child {
+        .logo {
             font-weight: bold;
             font-size: 20px;
+            display: flex;
+            align-items: center;
         }
         
-        .nav a {
-            margin: 0 10px;
+        .logo i {
+            margin-right: 10px;
+            color: #4CAF50;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .nav-links a {
             color: white;
             text-decoration: none;
             font-weight: 500;
             transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
         }
         
-        .nav a:hover {
+        .nav-links a:hover {
             opacity: 0.8;
+        }
+        
+        .nav-links a i {
+            margin-right: 8px;
+        }
+        
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        
+        .mobile-nav {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to right, #3a7bd5, #00d2ff);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000;
+        }
+        
+        .mobile-nav a {
+            display: block;
+            padding: 15px 20px;
+            color: white;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+        }
+        
+        .mobile-nav a i {
+            margin-right: 15px;
+            width: 20px;
+            text-align: center;
         }
         
         /* Container & Layout */
@@ -126,250 +212,320 @@
         .hidden {
             display: none;
         }
-         .popup {
-  display: none;
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: #4CAF50;
-  color: white;
-  padding: 15px 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  z-index: 9999;
-  font-size: 16px;
-}
-.popup.show {
-  display: block;
-  animation: fadeInOut 3s forwards;
-}
-@keyframes fadeInOut {
-  0% { opacity: 0; transform: translateY(-20px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; }
-  100% { opacity: 0; display: none; }
-}
-        </style>
-
+        
+        .popup {
+            display: none;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 9999;
+            font-size: 16px;
+        }
+        
+        .popup.show {
+            display: block;
+            animation: fadeInOut 3s forwards;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+        
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hamburger {
+                display: block;
+            }
+            
+            .mobile-nav.show {
+                display: block;
+            }
+        }
+    </style>
 </head>
 <body>
-<div id="authSection">
-    <p><b>PLZ LOGIN FIRST THEN YOU CONTROL YOUR DASHBOARD</b></p>
-    <h2>Register / Login</h2>
-    <input type="text" id="username" placeholder="Enter username">
-    <input type="password" id="password" placeholder="Enter password">
-    <input type="text" id="refCode" placeholder="Referral Code (optional)">
-    <button class="green-btn" onclick="registerLogin()">Submit</button>
-</div>
-  
-<div class="nav hidden" id="navBar">
-    <div>LOGO</div>
-    <div>
-        <a onclick="showSection('dashboard')" style="margin: 8px; padding: 10px 20px; background: linear-gradient(145deg, #e0e0e0, #ffffff); border-radius: 12px; box-shadow: 4px 4px 8px #ccc, -4px -4px 8px #fff; text-decoration: none; color: #333; font-weight: bold; transition: 0.3s ease;">Dashboard</a>
-
-<a onclick="showSection('recharge')" style="margin: 8px; padding: 10px 20px; background: linear-gradient(145deg, #e0e0e0, #ffffff); border-radius: 12px; box-shadow: 4px 4px 8px #ccc, -4px -4px 8px #fff; text-decoration: none; color: #333; font-weight: bold; transition: 0.3s ease;">Recharge</a>
-
-<a onclick="showSection('withdraw')" style="margin: 8px; padding: 10px 20px; background: linear-gradient(145deg, #e0e0e0, #ffffff); border-radius: 12px; box-shadow: 4px 4px 8px #ccc, -4px -4px 8px #fff; text-decoration: none; color: #333; font-weight: bold; transition: 0.3s ease;">Withdraw</a>
-
-<a onclick="showSection('earning')"style="margin: 8px; padding: 10px 20px; background: linear-gradient(145deg, #e0e0e0, #ffffff); border-radius: 12px; box-shadow: 4px 4px 8px #ccc, -4px -4px 8px #fff; text-decoration: none; color: #333; font-weight: bold; transition: 0.3s ease;">Earning</a>
-
-<a onclick="showSection('me')" style="margin: 8px; padding: 10px 20px; background: linear-gradient(145deg, #e0e0e0, #ffffff); border-radius: 12px; box-shadow: 4px 4px 8px #ccc, -4px -4px 8px #fff; text-decoration: none; color: #333; font-weight: bold; transition: 0.3s ease;">Me</a>
-
-<a onclick="showSection('admin')" style="margin: 8px; padding: 10px 20px; background: linear-gradient(145deg, #e0e0e0, #ffffff); border-radius: 12px; box-shadow: 4px 4px 8px #ccc, -4px -4px 8px #fff; text-decoration: none; color: #333; font-weight: bold; transition: 0.3s ease;">Admin</a>
-
-<a onclick="logout()" style="margin: 8px; padding: 10px 20px; background: linear-gradient(145deg, #ff7675, #fab1a0); border-radius: 12px; box-shadow: 4px 4px 8px #d63031, -4px -4px 8px #fab1a0; text-decoration: none; color: white; font-weight: bold; transition: 0.3s ease;">Logout</a>
-
+    <!-- Loading Spinner -->
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
     </div>
-</div>
 
-<div class="container active" id="dashboard">
-    <h2>Welcome to Real earning Honda Platform</h2>
-    <div class="section">
-        <h3>Your Referral Link</h3>
-        <input type="text" id="refLink" readonly>
-        <button class="green-btn" onclick="copyReferralLink()">Copy</button>
+    <!-- Auth Section (shown by default) -->
+    <div id="authSection">
+        <p><b>PLEASE LOGIN TO ACCESS YOUR DASHBOARD</b></p>
+        <h2>Register / Login</h2>
+        <input type="text" id="username" placeholder="Enter username">
+        <input type="password" id="password" placeholder="Enter password">
+        <input type="text" id="refCode" placeholder="Referral Code (optional)">
+        <button class="green-btn" onclick="registerLogin()">Submit</button>
     </div>
-    <p style="background: linear-gradient(90deg, #0073e6, #00c6ff); color: white; padding: 15px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px;">
-        <strong>User Balance:</strong> <span id="userBalance" style="font-weight: bold;">0</span> PKR
-      </p>
-      
-      <p style="background: linear-gradient(90deg, #00b894, #55efc4); color: white; padding: 15px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px;">
-        <strong>Referral Earnings:</strong> <span id="refEarnings" style="font-weight: bold;">0</span> PKR
-      </p>
-      
-      <p style="background: linear-gradient(90deg, #fd79a8, #e84393); color: white; padding: 15px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-        <strong>Registration Bonus:</strong> <span style="font-weight: bold;">5</span> PKR
-      </p>
-      
-    <div class="section">
-        <h3>Plans</h3>
-        <div style="padding: 15px; border: 1px solid #ccc; border-radius: 10px; background-color: #f1f1f1; max-width: 350px; margin: 10px auto; text-align: center;">
-            <strong style="font-size: 18px; color: #333;">Plan 1</strong><br>
-            <span style="font-size: 15px;">Daily Profit: <strong>90</strong></span><br>
-            <span style="font-size: 15px;">Recharge: <strong>500</strong></span><br>
-            <span style="font-size: 15px;">Duration of Cycle: <strong>100 Days</strong></span><br>
-            <span style="font-size: 15px;">Platform Total Return You: <strong>9000</strong></span><br>
-            <button onclick="buyPlan(1, 500, 90)" style="margin-top: 10px; padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
-              Invest Now
-            </button>
-          </div>
-          
-          <div style="padding: 15px; border: 1px solid #ccc; border-radius: 10px; background-color: #f1f1f1; max-width: 350px; margin: 10px auto; text-align: center;">
-            <strong style="font-size: 18px; color: #333;">Plan 2</strong><br>
-            <span style="font-size: 15px;">Daily Profit: <strong>180</strong></span><br>
-            <span style="font-size: 15px;">Recharge: <strong>900</strong></span><br>
-            <span style="font-size: 15px;">Duration of Cycle: <strong>100 Days</strong></span><br>
-            <span style="font-size: 15px;">Platform Total Return You: <strong>18000</strong></span><br>
-            <button onclick="buyPlan(2, 900, 180)" style="margin-top: 10px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
-              Invest Now
-            </button>
-          </div>
-          
-    </div>
-    <div class="section">
-        <h3>Transactions</h3>
-        <ul id="transactionList"></ul>
-    </div>
-</div>
-
-<div class="container" id="recharge">
-    <div class="section">
-        <h3 style="text-align: center; color: #28a745; font-size: 22px; margin-bottom: 20px;">
-            Recharge Your Balance
-        </h3>
+    
+    <!-- Navigation Bar (hidden by default) -->
+    <nav class="navbar hidden" id="navBar">
+        <div class="logo">
+            <i class="fas fa-car"></i>
+            <span>Honda Invest</span>
+        </div>
         
-        <p style="background-color: #f0fff4; padding: 15px; border-left: 5px solid #28a745; border-radius: 8px; margin-bottom: 15px;">
-            <strong>500 PKR - Jazzcash</strong><br>
-            Account No: <strong>03127805078</strong><br>
-            Account Holder: <strong>M Musa</strong>
+        <div class="nav-links">
+            <a onclick="showSection('dashboard')">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a onclick="showSection('recharge')">
+                <i class="fas fa-money-bill-wave"></i> Recharge
+            </a>
+            <a onclick="showSection('withdraw')">
+                <i class="fas fa-wallet"></i> Withdraw
+            </a>
+            <a onclick="showSection('earning')">
+                <i class="fas fa-coins"></i> Earning
+            </a>
+            <a onclick="showSection('me')">
+                <i class="fas fa-user-circle"></i> Account
+            </a>
+            <a onclick="showSection('admin')">
+                <i class="fas fa-user-shield"></i> Admin
+            </a>
+            <a onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+        
+        <button class="hamburger" id="hamburgerBtn">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="mobile-nav" id="mobileNav">
+            <a onclick="showSection('dashboard')">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a onclick="showSection('recharge')">
+                <i class="fas fa-money-bill-wave"></i> Recharge
+            </a>
+            <a onclick="showSection('withdraw')">
+                <i class="fas fa-wallet"></i> Withdraw
+            </a>
+            <a onclick="showSection('earning')">
+                <i class="fas fa-coins"></i> Earning
+            </a>
+            <a onclick="showSection('me')">
+                <i class="fas fa-user-circle"></i> Account
+            </a>
+            <a onclick="showSection('admin')">
+                <i class="fas fa-user-shield"></i> Admin
+            </a>
+            <a onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Content Sections -->
+    <div class="container" id="dashboard">
+        <h2>Welcome to Real earning Honda Platform</h2>
+        <div class="section">
+            <h3>Your Referral Link</h3>
+            <input type="text" id="refLink" readonly>
+            <button class="green-btn" onclick="copyReferralLink()">Copy</button>
+        </div>
+        <p style="background: linear-gradient(90deg, #0073e6, #00c6ff); color: white; padding: 15px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px;">
+            <strong>User Balance:</strong> <span id="userBalance" style="font-weight: bold;">0</span> PKR
         </p>
         
-         <input 
-  id="tillId" 
-  placeholder="TILL ID" 
-  type="text" 
-  maxlength="12" 
-  inputmode="numeric" 
-  pattern="\d*" 
-  oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12)"  style="width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
-        <p><b>Plz write your correct TILL ID . Otherwise recharge request failed.</b></p>
-        <p style="background-color: #f0f9ff; padding: 15px; border-left: 5px solid #007bff; border-radius: 8px; margin-bottom: 15px;">
-            <strong>900 PKR - Easypaisa</strong><br>
-            Account No: <strong>03054234681</strong><br>
-            Account Holder: <strong>M Mansha</strong>
+        <p style="background: linear-gradient(90deg, #00b894, #55efc4); color: white; padding: 15px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 10px;">
+            <strong>Referral Earnings:</strong> <span id="refEarnings" style="font-weight: bold;">0</span> PKR
         </p>
         
-        <input 
-  id="trxId" 
-  placeholder="TRX ID" 
-  type="text" 
-  maxlength="11" 
-  inputmode="numeric" 
-  pattern="\d*" 
-  oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"  style="width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
-        <p><b>Plz write your correct TRX ID . Otherwise recharge request failed.</b></p>
+        <p style="background: linear-gradient(90deg, #fd79a8, #e84393); color: white; padding: 15px; border-radius: 12px; font-size: 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            <strong>Registration Bonus:</strong> <span style="font-weight: bold;">5</span> PKR
+        </p>
         
-        <button class="green-btn" onclick="submitRechargeRequest()">Submit</button>
-    </div>
-</div>
-
-<div class="container" id="withdraw">
-    <div class="section">
-        <h3 style="
-        text-align: center;
-        color: #6f42c1;
-        font-size: 24px;
-        margin-bottom: 25px;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
-    ">
-        💸 Withdraw Your Amount
-    </h3>
-    
-    <input id="withdrawAmount" placeholder="Enter Amount (PKR)" 
-           style="
-               width: 100%;
-               padding: 12px;
-               margin-bottom: 18px;
-               border-radius: 10px;
-               border: none;
-               background: rgba(255,255,255,0.7);
-               box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-               font-size: 16px;
-               font-weight: 500;
-               backdrop-filter: blur(4px);
-           "><br>
-    
-    <input id="withdrawHolder" placeholder="Account Holder Name"
-           style="
-               width: 100%;
-               padding: 12px;
-               margin-bottom: 18px;
-               border-radius: 10px;
-               border: none;
-               background: rgba(255,255,255,0.7);
-               box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-               font-size: 16px;
-               font-weight: 500;
-               backdrop-filter: blur(4px);
-           "><br>
-    
-    <input id="withdrawNumber" placeholder="Account Number"
-           style="
-               width: 100%;
-               padding: 12px;
-               margin-bottom: 18px;
-               border-radius: 10px;
-               border: none;
-               background: rgba(255,255,255,0.7);
-               box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-               font-size: 16px;
-               font-weight: 500;
-               backdrop-filter: blur(4px);
-           "><br>
-    
+        <div class="section">
+            <h3>Plans</h3>
+            <div style="padding: 15px; border: 1px solid #ccc; border-radius: 10px; background-color: #f1f1f1; max-width: 350px; margin: 10px auto; text-align: center;">
+                <strong style="font-size: 18px; color: #333;">Plan 1</strong><br>
+                <span style="font-size: 15px;">Daily Profit: <strong>90</strong></span><br>
+                <span style="font-size: 15px;">Recharge: <strong>500</strong></span><br>
+                <span style="font-size: 15px;">Duration of Cycle: <strong>100 Days</strong></span><br>
+                <span style="font-size: 15px;">Platform Total Return You: <strong>9000</strong></span><br>
+                <button onclick="buyPlan(1, 500, 90)" style="margin-top: 10px; padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
+                    Invest Now
+                </button>
+            </div>
+            
+            <div style="padding: 15px; border: 1px solid #ccc; border-radius: 10px; background-color: #f1f1f1; max-width: 350px; margin: 10px auto; text-align: center;">
+                <strong style="font-size: 18px; color: #333;">Plan 2</strong><br>
+                <span style="font-size: 15px;">Daily Profit: <strong>180</strong></span><br>
+                <span style="font-size: 15px;">Recharge: <strong>900</strong></span><br>
+                <span style="font-size: 15px;">Duration of Cycle: <strong>100 Days</strong></span><br>
+                <span style="font-size: 15px;">Platform Total Return You: <strong>18000</strong></span><br>
+                <button onclick="buyPlan(2, 900, 180)" style="margin-top: 10px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
+                    Invest Now
+                </button>
+            </div>
+        </div>
         
-        <button class="green-btn" onclick="submitWithdrawRequest()">Withdraw</button>
-    </div>
-</div>
-<div class="container" id="earning">
-    <div class="section">
-        <div style="padding: 20px; border: 1px solid #ccc; border-radius: 10px; max-width: 400px; margin: auto; background-color: #f9f9f9; text-align: center;">
-            <h3 style="margin-bottom: 20px; color: #333;">Daily Earnings</h3>
-            <p style="font-size: 16px; margin: 8px 0;"><strong>Plan:</strong> <span id="planName">Plan 1</span></p>
-            <p style="font-size: 16px; margin: 8px 0;"><strong>Daily Profit:</strong> <span id="dailyProfit">100</span></p>
-            <button onclick="receiveProfit()" style="margin-top: 20px; padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-              Receive Daily Profit
-            </button>
-          </div>
-          
-
-    </div>
-  </div>
-  
-<div class="container" id="me">
-    <div class="section">
-        <h3>Account Info</h3>
-        <p>Username: <span id="displayUsername"></span></p>
-    </div>
-</div>
-
-<div class="container" id="admin">
-    <div class="section">
-        <h3>Admin Panel (Owner Only)</h3>
-        <input type="password" id="adminPass" placeholder="Enter Admin Password">
-        <button class="green-btn" onclick="loadAdminPanel()">Enter</button>
-        <div id="adminContent" class="hidden">
-            <h4>Recharge Requests</h4>
-            <table id="rechargeTable"></table>
-            <h4>Withdraw Requests</h4>
-            <table id="withdrawTable"></table>
+        <div class="section">
+            <h3>Transactions</h3>
+            <ul id="transactionList"></ul>
         </div>
     </div>
-</div>
-<div id="successPopup" class="popup"></div>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <div class="container" id="recharge">
+        <div class="section">
+            <h3 style="text-align: center; color: #28a745; font-size: 22px; margin-bottom: 20px;">
+                Recharge Your Balance
+            </h3>
+            
+            <p style="background-color: #f0fff4; padding: 15px; border-left: 5px solid #28a745; border-radius: 8px; margin-bottom: 15px;">
+                <strong>500 PKR - Jazzcash</strong><br>
+                Account No: <strong>03127805078</strong><br>
+                Account Holder: <strong>M Musa</strong>
+            </p>
+            
+            <input 
+                id="tillId" 
+                placeholder="TILL ID" 
+                type="text" 
+                maxlength="12" 
+                inputmode="numeric" 
+                pattern="\d*" 
+                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12)"  
+                style="width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+            <p><b>Please write your correct TILL ID. Otherwise recharge request will fail.</b></p>
+            
+            <p style="background-color: #f0f9ff; padding: 15px; border-left: 5px solid #007bff; border-radius: 8px; margin-bottom: 15px;">
+                <strong>900 PKR - Easypaisa</strong><br>
+                Account No: <strong>03054234681</strong><br>
+                Account Holder: <strong>M Mansha</strong>
+            </p>
+            
+            <input 
+                id="trxId" 
+                placeholder="TRX ID" 
+                type="text" 
+                maxlength="11" 
+                inputmode="numeric" 
+                pattern="\d*" 
+                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)"  
+                style="width: 100%; padding: 10px; margin-bottom: 20px; border-radius: 6px; border: 1px solid #ccc; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+            <p><b>Please write your correct TRX ID. Otherwise recharge request will fail.</b></p>
+            
+            <button class="green-btn" onclick="submitRechargeRequest()">Submit</button>
+        </div>
+    </div>
+
+    <div class="container" id="withdraw">
+        <div class="section">
+            <h3 style="
+                text-align: center;
+                color: #6f42c1;
+                font-size: 24px;
+                margin-bottom: 25px;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            ">
+                💸 Withdraw Your Amount
+            </h3>
+            
+            <input id="withdrawAmount" placeholder="Enter Amount (PKR)" 
+                style="
+                    width: 100%;
+                    padding: 12px;
+                    margin-bottom: 18px;
+                    border-radius: 10px;
+                    border: none;
+                    background: rgba(255,255,255,0.7);
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                    font-size: 16px;
+                    font-weight: 500;
+                    backdrop-filter: blur(4px);
+                "><br>
+            
+            <input id="withdrawHolder" placeholder="Account Holder Name"
+                style="
+                    width: 100%;
+                    padding: 12px;
+                    margin-bottom: 18px;
+                    border-radius: 10px;
+                    border: none;
+                    background: rgba(255,255,255,0.7);
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                    font-size: 16px;
+                    font-weight: 500;
+                    backdrop-filter: blur(4px);
+                "><br>
+            
+            <input id="withdrawNumber" placeholder="Account Number"
+                style="
+                    width: 100%;
+                    padding: 12px;
+                    margin-bottom: 18px;
+                    border-radius: 10px;
+                    border: none;
+                    background: rgba(255,255,255,0.7);
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                    font-size: 16px;
+                    font-weight: 500;
+                    backdrop-filter: blur(4px);
+                "><br>
+            
+            <button class="green-btn" onclick="submitWithdrawRequest()">Withdraw</button>
+        </div>
+    </div>
+
+    <div class="container" id="earning">
+        <div class="section">
+            <div style="padding: 20px; border: 1px solid #ccc; border-radius: 10px; max-width: 400px; margin: auto; background-color: #f9f9f9; text-align: center;">
+                <h3 style="margin-bottom: 20px; color: #333;">Daily Earnings</h3>
+                <p style="font-size: 16px; margin: 8px 0;"><strong>Plan:</strong> <span id="planName">Plan 1</span></p>
+                <p style="font-size: 16px; margin: 8px 0;"><strong>Daily Profit:</strong> <span id="dailyProfit">100</span></p>
+                <button onclick="receiveProfit()" style="margin-top: 20px; padding: 10px 20px; font-size: 16px; background-color: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                    Receive Daily Profit
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container" id="me">
+        <div class="section">
+            <h3>Account Info</h3>
+            <p>Username: <span id="displayUsername"></span></p>
+        </div>
+    </div>
+
+    <div class="container" id="admin">
+        <div class="section">
+            <h3>Admin Panel (Owner Only)</h3>
+            <input type="password" id="adminPass" placeholder="Enter Admin Password">
+            <button class="green-btn" onclick="loadAdminPanel()">Enter</button>
+            <div id="adminContent" class="hidden">
+                <h4>Recharge Requests</h4>
+                <table id="rechargeTable"></table>
+                <h4>Withdraw Requests</h4>
+                <table id="withdrawTable"></table>
+            </div>
+        </div>
+    </div>
+
+    <div id="successPopup" class="popup"></div>
+
+    <!-- Add these right before your script.js -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
 <script src="script.js"></script>
+    
 </body>
 </html>
