@@ -8,6 +8,13 @@ const firebaseConfig = {
     messagingSenderId: "560385393645",
     appId: "1:560385393645:web:b924700f4671efccd2dde4"
 };
+
+// Cloudinary configuration
+const cloudinaryConfig = {
+    cloudName: 'dhoqwv6yp',
+    uploadPreset: 'Sathi101' // Create unsigned upload preset in Cloudinary
+};
+
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
@@ -15,7 +22,7 @@ const database = firebase.database();
 // Global variables
 let currentUser = null;
 let userData = null;
-let adminPassword = "admin123"; // Change this to a more secure password in production
+let adminPassword = "Lavaithan"; // Change this to a more secure password in production
 
 // DOM elements
 const authSection = document.getElementById('authSection');
@@ -310,12 +317,18 @@ function buyPlan(planId, amount, dailyProfit) {
 }
 
 // Recharge functions
-function submitRechargeRequest() {
+async function submitRechargeRequest() {
     const tillId = document.getElementById('tillId').value.trim();
     const trxId = document.getElementById('trxId').value.trim();
+    const paymentProof = document.getElementById('paymentProof').files[0];
     
     if (!tillId && !trxId) {
         showPopup('Please provide either TILL ID or TRX ID');
+        return;
+    }
+    
+    if (!paymentProof) {
+        showPopup('Please upload payment proof');
         return;
     }
     
@@ -325,32 +338,58 @@ function submitRechargeRequest() {
     
     showLoader();
     
-    // Create recharge request
-    const rechargeRequest = {
-        username: currentUser.username,
-        amount: amount,
-        paymentMethod: paymentMethod,
-        transactionId: transactionId,
-        date: new Date().toISOString(),
-        status: 'pending'
-    };
+    try {
+        // Upload payment proof to Cloudinary
+        const imageUrl = await uploadPaymentProof(paymentProof);
+        
+        // Create recharge request with image URL
+        const rechargeRequest = {
+            username: currentUser.username,
+            amount: amount,
+            paymentMethod: paymentMethod,
+            transactionId: transactionId,
+            paymentProof: imageUrl,
+            date: new Date().toISOString(),
+            status: 'pending'
+        };
+        
+        // Add to recharge requests
+        const newRequestKey = database.ref('rechargeRequests').push().key;
+        const updates = {};
+        updates['/rechargeRequests/' + newRequestKey] = rechargeRequest;
+        
+        await database.ref().update(updates);
+        
+        hideLoader();
+        showPopup('Recharge request submitted successfully!');
+        document.getElementById('tillId').value = '';
+        document.getElementById('trxId').value = '';
+        document.getElementById('paymentProof').value = '';
+    } catch (error) {
+        hideLoader();
+        showPopup('Error submitting request: ' + error.message);
+    }
+}
+
+async function uploadPaymentProof(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', cloudinaryConfig.uploadPreset);
     
-    // Add to recharge requests
-    const newRequestKey = database.ref('rechargeRequests').push().key;
-    const updates = {};
-    updates['/rechargeRequests/' + newRequestKey] = rechargeRequest;
+    const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,
+        {
+            method: 'POST',
+            body: formData
+        }
+    );
     
-    database.ref().update(updates)
-        .then(() => {
-            hideLoader();
-            showPopup('Recharge request submitted successfully!');
-            document.getElementById('tillId').value = '';
-            document.getElementById('trxId').value = '';
-        })
-        .catch(error => {
-            hideLoader();
-            showPopup('Error submitting request: ' + error.message);
-        });
+    if (!response.ok) {
+        throw new Error('Failed to upload image');
+    }
+    
+    const data = await response.json();
+    return data.secure_url;
 }
 
 // Withdraw functions
@@ -408,12 +447,27 @@ function submitWithdrawRequest() {
 }
 
 // Earning functions
+// Earning functions
 function receiveProfit() {
     if (!currentUser || !currentUser.plans || currentUser.plans.length === 0) {
         showPopup('No active plans to receive profit from');
         return;
     }
-    
+
+    // Check if 24 hours have passed since last profit claim
+    const lastProfitTransaction = currentUser.transactions?.reverse().find(t => t.type === 'profit');
+    if (lastProfitTransaction) {
+        const lastClaimTime = new Date(lastProfitTransaction.date).getTime();
+        const currentTime = new Date().getTime();
+        const hoursSinceLastClaim = (currentTime - lastClaimTime) / (1000 * 60 * 60);
+        
+        if (hoursSinceLastClaim < 24) {
+            const hoursRemaining = Math.ceil(24 - hoursSinceLastClaim);
+            showPopup(`Please wait ${hoursRemaining} more hours before claiming next profit`);
+            return;
+        }
+    }
+
     showLoader();
     
     // Calculate total daily profit from all active plans
@@ -463,7 +517,7 @@ function receiveProfit() {
             localStorage.setItem('hondaUser', JSON.stringify(currentUser));
             updateDashboard();
             hideLoader();
-            showPopup(`Daily profit of ${totalProfit} PKR received!`);
+            showPopup(`Daily profit of ${totalProfit} PKR received! Come back in 24 hours for next profit.`);
         })
         .catch(error => {
             hideLoader();
@@ -495,6 +549,7 @@ function loadAdminPanel() {
                     <th>Amount</th>
                     <th>Method</th>
                     <th>Transaction ID</th>
+                    <th>Payment Proof</th>
                     <th>Date</th>
                     <th>Status</th>
                     <th>Action</th>
@@ -513,6 +568,7 @@ function loadAdminPanel() {
                 <td>${request.amount} PKR</td>
                 <td>${request.paymentMethod}</td>
                 <td>${request.transactionId}</td>
+                <td><a href="${request.paymentProof}" target="_blank">View Proof</a></td>
                 <td>${formatDate(request.date)}</td>
                 <td>${request.status}</td>
                 <td>
