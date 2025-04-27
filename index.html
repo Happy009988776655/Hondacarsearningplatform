@@ -355,27 +355,95 @@
         </p>
         
         <div class="section">
-            <h3>Plans</h3>
-            <div style="padding: 15px; border: 1px solid #ccc; border-radius: 10px; background-color: #f1f1f1; max-width: 350px; margin: 10px auto; text-align: center;">
-                <strong style="font-size: 18px; color: #333;">Plan 1</strong><br>
-                <span style="font-size: 15px;">Daily Profit: <strong>90</strong></span><br>
-                <span style="font-size: 15px;">Recharge: <strong>500</strong></span><br>
-                <span style="font-size: 15px;">Duration of Cycle: <strong>100 Days</strong></span><br>
-                <span style="font-size: 15px;">Platform Total Return You: <strong>9000</strong></span><br>
-                <button onclick="buyPlan(1, 500, 90)" style="margin-top: 10px; padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
-                    Invest Now
-                </button>
-            </div>
-            
-            <div style="padding: 15px; border: 1px solid #ccc; border-radius: 10px; background-color: #f1f1f1; max-width: 350px; margin: 10px auto; text-align: center;">
-                <strong style="font-size: 18px; color: #333;">Plan 2</strong><br>
-                <span style="font-size: 15px;">Daily Profit: <strong>180</strong></span><br>
-                <span style="font-size: 15px;">Recharge: <strong>900</strong></span><br>
-                <span style="font-size: 15px;">Duration of Cycle: <strong>100 Days</strong></span><br>
-                <span style="font-size: 15px;">Platform Total Return You: <strong>18000</strong></span><br>
-                <button onclick="buyPlan(2, 900, 180)" style="margin-top: 10px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; font-size: 14px; cursor: pointer;">
-                    Invest Now
-                </button>
+            <h3 style="text-align: center; color: #2c3e50; margin-bottom: 30px; font-size: 28px;">Investment Plans</h3>
+            <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 25px;">
+                <!-- Plan 1 -->
+                <div style="padding: 25px; border: 1px solid #e0e0e0; border-radius: 15px; background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%); max-width: 350px; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.3s ease;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="background-color: #28a745; width: 60px; height: 60px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="white" viewBox="0 0 16 16">
+                                <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+                            </svg>
+                        </div>
+                        <h4 style="font-size: 22px; color: #2c3e50; margin: 0;">Starter Plan</h4>
+                        <p style="color: #7f8c8d; margin-top: 5px;">Perfect for beginners</p>
+                    </div>
+                    
+                    <div style="background-color: white; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#28a745" viewBox="0 0 16 16" style="margin-right: 10px;">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                            <span style="font-size: 15px;">Daily Profit: <strong style="color: #28a745;">PKR 90</strong></span>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#28a745" viewBox="0 0 16 16" style="margin-right: 10px;">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                            <span style="font-size: 15px;">Investment: <strong style="color: #28a745;">PKR 500</strong></span>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#28a745" viewBox="0 0 16 16" style="margin-right: 10px;">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                            <span style="font-size: 15px;">Duration: <strong style="color: #28a745;">100 Days</strong></span>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#28a745" viewBox="0 0 16 16" style="margin-right: 10px;">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                            <span style="font-size: 15px;">Total Return: <strong style="color: #28a745;">PKR 9,000</strong></span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="buyPlan(1, 500, 90)" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #28a745 0%, #218838 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Invest Now
+                    </button>
+                </div>
+                
+                <!-- Plan 2 -->
+                <div style="padding: 25px; border: 1px solid #e0e0e0; border-radius: 15px; background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%); max-width: 350px; width: 100%; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: transform 0.3s ease;">
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="background-color: #007bff; width: 60px; height: 60px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 15px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="white" viewBox="0 0 16 16">
+                                <path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zM8 1.918l-.797.161A4.002 4.002 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4.002 4.002 0 0 0-3.203-3.92L8 1.917zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5.002 5.002 0 0 1 13 6c0 .88.32 4.2 1.22 6z"/>
+                            </svg>
+                        </div>
+                        <h4 style="font-size: 22px; color: #2c3e50; margin: 0;">Premium Plan</h4>
+                        <p style="color: #7f8c8d; margin-top: 5px;">For serious investors</p>
+                    </div>
+                    
+                    <div style="background-color: white; border-radius: 10px; padding: 15px; margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#007bff" viewBox="0 0 16 16" style="margin-right: 10px;">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                            <span style="font-size: 15px;">Daily Profit: <strong style="color: #007bff;">PKR 180</strong></span>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#007bff" viewBox="0 0 16 16" style="margin-right: 10px;">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                            <span style="font-size: 15px;">Investment: <strong style="color: #007bff;">PKR 900</strong></span>
+                        </div>
+                        <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#007bff" viewBox="0 0 16 16" style="margin-right: 10px;">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                            <span style="font-size: 15px;">Duration: <strong style="color: #007bff;">100 Days</strong></span>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="#007bff" viewBox="0 0 16 16" style="margin-right: 10px;">
+                                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                            </svg>
+                            <span style="font-size: 15px;">Total Return: <strong style="color: #007bff;">PKR 18,000</strong></span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="buyPlan(2, 900, 180)" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #007bff 0%, #0069d9 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+                        Invest Now
+                    </button>
+                </div>
             </div>
         </div>
         
