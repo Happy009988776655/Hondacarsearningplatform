@@ -22,7 +22,7 @@ const database = firebase.database();
 // Global variables
 let currentUser = null;
 let userData = null;
-let adminPassword = "Lavaithan"; // Change this to a more secure password in production
+let adminPassword = "admin123"; // Change this to a more secure password in production
 
 // DOM elements
 const authSection = document.getElementById('authSection');
@@ -50,7 +50,17 @@ document.addEventListener('DOMContentLoaded', function() {
 function registerLogin() {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
-    const refCode = document.getElementById('refCode').value.trim();
+    let refCode = document.getElementById('refCode').value.trim();
+    
+    // First check URL for referral code if input is empty
+    if (!refCode) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlRefCode = urlParams.get('ref');
+        if (urlRefCode) {
+            refCode = urlRefCode;
+            document.getElementById('refCode').value = refCode; // Auto-fill the input field
+        }
+    }
     
     if (!username || !password) {
         showPopup('Username and password are required');
@@ -90,6 +100,9 @@ function registerLogin() {
                     // If referred by someone, update their referral earnings
                     if (refCode) {
                         updateReferralBonus(refCode, 5);
+                        
+                        // Store that this user came from a referral
+                        localStorage.setItem('referredBy', refCode);
                     }
                     
                     loginUser(newUser);
@@ -104,6 +117,36 @@ function registerLogin() {
         showPopup('Error: ' + error.message);
     });
 }
+
+// Add this at the start of your DOMContentLoaded or initialization
+function checkForReferral() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    
+    // Only auto-fill if the field is empty and we have a ref code
+    if (refCode && !document.getElementById('refCode').value) {
+        document.getElementById('refCode').value = refCode;
+        
+        // Optional: Visual feedback
+        const refField = document.getElementById('refCode');
+        refField.style.border = '1px solid #4CAF50';
+        setTimeout(() => {
+            refField.style.border = '1px solid #ddd';
+        }, 2000);
+    }
+    
+    // Check localStorage for previous referral (if you want persistence)
+    const storedRef = localStorage.getItem('referredBy');
+    if (storedRef && !document.getElementById('refCode').value) {
+        document.getElementById('refCode').value = storedRef;
+    }
+}
+
+// Call this when your page loads
+document.addEventListener('DOMContentLoaded', function() {
+    checkForReferral();
+    // ... your other initialization code ...
+});
 
 function loginUser(user) {
     currentUser = user;
@@ -201,6 +244,7 @@ function copyReferralLink() {
     document.execCommand('copy');
     showPopup('Referral link copied!');
 }
+
 
 function updateTransactionList() {
     const transactionList = document.getElementById('transactionList');
