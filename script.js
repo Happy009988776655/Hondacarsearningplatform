@@ -22,7 +22,7 @@ const database = firebase.database();
 // Global variables
 let currentUser = null;
 let userData = null;
-let adminPassword = "admin123"; // Change this to a more secure password in production
+let adminPassword = "null"; // Change this to a more secure password in production
 
 // DOM elements
 const authSection = document.getElementById('authSection');
@@ -46,29 +46,27 @@ document.addEventListener('DOMContentLoaded', function() {
     hamburgerBtn.addEventListener('click', toggleMobileNav);
 });
 
+
+
+
+// Get reference code from URL if available
+const urlParams = new URLSearchParams(window.location.search);
+const referralCodeFromURL = urlParams.get('ref') || "";
+
 // Authentication functions
 function registerLogin() {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value.trim();
-    let refCode = document.getElementById('refCode').value.trim();
-    
-    // First check URL for referral code if input is empty
-    if (!refCode) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlRefCode = urlParams.get('ref');
-        if (urlRefCode) {
-            refCode = urlRefCode;
-            document.getElementById('refCode').value = refCode; // Auto-fill the input field
-        }
-    }
-    
+    const refCodeInput = document.getElementById('refCode').value.trim();
+    const refCode = refCodeInput || referralCodeFromURL;
+
     if (!username || !password) {
         showPopup('Username and password are required');
         return;
     }
-    
+
     showLoader();
-    
+
     // Check if user exists
     database.ref('users/' + username).once('value').then(snapshot => {
         if (snapshot.exists()) {
@@ -93,18 +91,15 @@ function registerLogin() {
                 plans: [],
                 createdAt: new Date().toISOString()
             };
-            
+
             // Save user to database
             database.ref('users/' + username).set(newUser)
                 .then(() => {
                     // If referred by someone, update their referral earnings
                     if (refCode) {
                         updateReferralBonus(refCode, 5);
-                        
-                        // Store that this user came from a referral
-                        localStorage.setItem('referredBy', refCode);
                     }
-                    
+
                     loginUser(newUser);
                 })
                 .catch(error => {
@@ -118,64 +113,34 @@ function registerLogin() {
     });
 }
 
-// Add this at the start of your DOMContentLoaded or initialization
-function checkForReferral() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const refCode = urlParams.get('ref');
-    
-    // Only auto-fill if the field is empty and we have a ref code
-    if (refCode && !document.getElementById('refCode').value) {
-        document.getElementById('refCode').value = refCode;
-        
-        // Optional: Visual feedback
-        const refField = document.getElementById('refCode');
-        refField.style.border = '1px solid #4CAF50';
-        setTimeout(() => {
-            refField.style.border = '1px solid #ddd';
-        }, 2000);
-    }
-    
-    // Check localStorage for previous referral (if you want persistence)
-    const storedRef = localStorage.getItem('referredBy');
-    if (storedRef && !document.getElementById('refCode').value) {
-        document.getElementById('refCode').value = storedRef;
-    }
-}
-
-// Call this when your page loads
-document.addEventListener('DOMContentLoaded', function() {
-    checkForReferral();
-    // ... your other initialization code ...
-});
-
 function loginUser(user) {
     currentUser = user;
     localStorage.setItem('hondaUser', JSON.stringify(user));
-    
+
     // Update UI
     authSection.style.display = 'none';
     navBar.classList.remove('hidden');
     showSection('dashboard');
     updateDashboard();
     hideLoader();
-    
+
     showPopup('Login successful!');
 }
 
 function logout() {
     currentUser = null;
     localStorage.removeItem('hondaUser');
-    
+
     // Update UI
     authSection.style.display = 'block';
     navBar.classList.add('hidden');
     containers.forEach(container => container.style.display = 'none');
-    
+
     // Clear form fields
     document.getElementById('username').value = '';
     document.getElementById('password').value = '';
     document.getElementById('refCode').value = '';
-    
+
     showPopup('Logged out successfully');
 }
 
@@ -202,9 +167,9 @@ function showSection(sectionId) {
     containers.forEach(container => {
         container.style.display = 'none';
     });
-    
+
     document.getElementById(sectionId).style.display = 'block';
-    
+
     // Update specific sections if needed
     if (sectionId === 'dashboard') {
         updateDashboard();
@@ -213,7 +178,7 @@ function showSection(sectionId) {
     } else if (sectionId === 'admin') {
         document.getElementById('adminContent').classList.add('hidden');
     }
-    
+
     // Close mobile nav if open
     mobileNav.classList.remove('show');
 }
@@ -225,15 +190,15 @@ function toggleMobileNav() {
 // Dashboard functions
 function updateDashboard() {
     if (!currentUser) return;
-    
+
     // Update balance and referral earnings
     document.getElementById('userBalance').textContent = currentUser.balance;
     document.getElementById('refEarnings').textContent = currentUser.refEarnings;
-    
+
     // Update referral link
     const refLink = window.location.href.split('?')[0] + '?ref=' + currentUser.refCode;
     document.getElementById('refLink').value = refLink;
-    
+
     // Update transactions
     updateTransactionList();
 }
@@ -241,9 +206,39 @@ function updateDashboard() {
 function copyReferralLink() {
     const refLink = document.getElementById('refLink');
     refLink.select();
-    document.execCommand('copy');
-    showPopup('Referral link copied!');
+    refLink.setSelectionRange(0, 99999); // For mobile compatibility
+    navigator.clipboard.writeText(refLink.value).then(() => {
+        showPopup('Referral link copied!');
+    }).catch(err => {
+        showPopup('Copy failed: ' + err);
+    });
 }
+
+// Utility to generate a simple referral code
+function generateRefCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
+// Dummy function to simulate referral bonus
+function updateReferralBonus(refCode, amount) {
+    // Search all users for matching refCode
+    database.ref('users').once('value', snapshot => {
+        snapshot.forEach(child => {
+            const user = child.val();
+            if (user.refCode === refCode) {
+                const newEarnings = (user.refEarnings || 0) + amount;
+                database.ref('users/' + user.username + '/refEarnings').set(newEarnings);
+            }
+        });
+    });
+}
+
+
 
 
 function updateTransactionList() {
