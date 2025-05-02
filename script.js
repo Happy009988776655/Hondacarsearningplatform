@@ -431,44 +431,60 @@ async function uploadPaymentProof(file) {
     return data.secure_url;
 }
 
-// Withdraw functions
+function toggleWithdrawFields() {
+    const method = document.getElementById('withdrawMethod').value;
+    const fieldsDiv = document.getElementById('withdrawFields');
+    fieldsDiv.style.display = method ? 'block' : 'none';
+}
+
+// Withdraw function with method and limits
 function submitWithdrawRequest() {
     const amount = parseFloat(document.getElementById('withdrawAmount').value);
+    const method = document.getElementById('withdrawMethod').value;
     const holder = document.getElementById('withdrawHolder').value.trim();
     const number = document.getElementById('withdrawNumber').value.trim();
-    
+
     if (!amount || amount <= 0) {
         showPopup('Please enter a valid amount');
         return;
     }
-    
-    if (currentUser.balance < amount) {
-        showPopup('Insufficient balance for withdrawal');
+
+    if (amount < 1400 || amount > 20000) {
+        showPopup('Withdrawal amount must be between PKR 1400 and PKR 20,000');
         return;
     }
-    
+
+    if (!method) {
+        showPopup('Please select a withdrawal method');
+        return;
+    }
+
     if (!holder || !number) {
         showPopup('Please provide account details');
         return;
     }
-    
+
+    if (currentUser.balance < amount) {
+        showPopup('Insufficient balance for withdrawal');
+        return;
+    }
+
     showLoader();
-    
-    // Create withdraw request
+
     const withdrawRequest = {
         username: currentUser.username,
         amount: amount,
+        method: method,
         accountHolder: holder,
         accountNumber: number,
         date: new Date().toISOString(),
         status: 'pending'
     };
-    
-    // Add to withdraw requests
+
     const newRequestKey = database.ref('withdrawRequests').push().key;
     const updates = {};
     updates['/withdrawRequests/' + newRequestKey] = withdrawRequest;
-    
+
     database.ref().update(updates)
         .then(() => {
             hideLoader();
@@ -476,8 +492,10 @@ function submitWithdrawRequest() {
             
             // Clear form fields
             document.getElementById('withdrawAmount').value = '';
+            document.getElementById('withdrawMethod').value = '';
             document.getElementById('withdrawHolder').value = '';
             document.getElementById('withdrawNumber').value = '';
+            document.getElementById('withdrawFields').style.display = 'none';
         })
         .catch(error => {
             hideLoader();
@@ -624,53 +642,56 @@ function loadAdminPanel() {
             tbody.appendChild(tr);
         });
         
-        // Load withdraw requests
-        return database.ref('withdrawRequests').once('value');
-    }).then(snapshot => {
-        const requests = snapshot.val() || {};
-        const withdrawTable = document.getElementById('withdrawTable');
-        
-        // Create table header
-        withdrawTable.innerHTML = `
-            <thead>
-                <tr>
-                    <th>Username</th>
-                    <th>Amount</th>
-                    <th>Account Holder</th>
-                    <th>Account Number</th>
-                    <th>Date</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
+      // Load withdraw requests
+  database.ref('withdrawRequests').once('value').then(snapshot => {
+    const requests = snapshot.val() || {};
+    const withdrawTable = document.getElementById('withdrawTable');
+    
+    // Create table header
+    withdrawTable.innerHTML = `
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Account Holder</th>
+                <th>Account Number</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    `;
+    
+    const tbody = withdrawTable.querySelector('tbody');
+    
+    // Add each request to table
+    Object.entries(requests).forEach(([key, request]) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${request.username}</td>
+            <td>${request.amount} PKR</td>
+            <td>${request.method || 'N/A'}</td>
+            <td>${request.accountHolder}</td>
+            <td>${request.accountNumber}</td>
+            <td>${formatDate(request.date)}</td>
+            <td>${request.status}</td>
+            <td>
+                ${request.status === 'pending' ? `
+                    <button onclick="approveWithdraw('${key}', '${request.username}', ${request.amount})" style="padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Approve
+                    </button>
+                    <button onclick="rejectWithdraw('${key}', '${request.username}', ${request.amount})" style="padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Reject
+                    </button>
+                ` : ''}
+            </td>
         `;
-        
-        const tbody = withdrawTable.querySelector('tbody');
-        
-        // Add each request to table
-        Object.entries(requests).forEach(([key, request]) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${request.username}</td>
-                <td>${request.amount} PKR</td>
-                <td>${request.accountHolder}</td>
-                <td>${request.accountNumber}</td>
-                <td>${formatDate(request.date)}</td>
-                <td>${request.status}</td>
-                <td>
-                    ${request.status === 'pending' ? `
-                        <button onclick="approveWithdraw('${key}', '${request.username}', ${request.amount})" style="padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            Approve
-                        </button>
-                        <button onclick="rejectWithdraw('${key}', '${request.username}', ${request.amount})" style="padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                            Reject
-                        </button>
-                    ` : ''}
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
+        tbody.appendChild(tr);
+    });
+});
+
         
         // Show admin content
         document.getElementById('adminContent').classList.remove('hidden');
