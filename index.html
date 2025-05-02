@@ -144,7 +144,7 @@
                     <div class="plan-details">
                         <div class="plan-feature">
                             <i class="fas fa-check-circle"></i>
-                            <span>Daily Profit: <strong>PKR 90</strong></span>
+                            <span>Daily Profit: <strong>PKR 40</strong></span>
                         </div>
                         <div class="plan-feature">
                             <i class="fas fa-check-circle"></i>
@@ -160,7 +160,7 @@
                         </div>
                     </div>
                     
-                    <button class="plan-button" onclick="buyPlan(1, 500, 90)">
+                    <button class="plan-button" onclick="buyPlan(1, 500, 40)">
                         Invest Now
                     </button>
                 </div>
@@ -178,7 +178,7 @@
                     <div class="plan-details">
                         <div class="plan-feature">
                             <i class="fas fa-check-circle"></i>
-                            <span>Daily Profit: <strong>PKR 180</strong></span>
+                            <span>Daily Profit: <strong>PKR 90</strong></span>
                         </div>
                         <div class="plan-feature">
                             <i class="fas fa-check-circle"></i>
@@ -194,7 +194,7 @@
                         </div>
                     </div>
                     
-                    <button class="plan-button" onclick="buyPlan(2, 900, 180)">
+                    <button class="plan-button" onclick="buyPlan(2, 900, 90)">
                         Invest Now
                     </button>
                 </div>
@@ -245,14 +245,49 @@
             <h3 class="withdraw-title">
                 <i class="fas fa-wallet"></i> Withdraw Your Amount
             </h3>
-            
+    
+            <p style="color: red; font-weight: bold;">
+                Withdrawals are processed from 9:00 AM to 4:00 PM.
+            </p>
+    
             <input id="withdrawAmount" placeholder="Enter Amount (PKR)">
-            <input id="withdrawHolder" placeholder="Account Holder Name">
-            <input id="withdrawNumber" placeholder="Account Number">
             
+            <select 
+            id="withdrawMethod" 
+            onchange="toggleWithdrawFields()" 
+            style="
+                padding: 12px 16px;
+                border: 2px solid #4a6ee0;
+                border-radius: 8px;
+                font-size: 16px;
+                width: 240px;
+                background-color: #f8f9ff;
+                color: #333;
+                cursor: pointer;
+                font-family: 'Arial', sans-serif;
+                box-shadow: 0 2px 8px rgba(74, 110, 224, 0.1);
+                transition: all 0.3s ease;
+                outline: none;
+            "
+            onfocus="this.style.borderColor='#2a4bd7'; this.style.boxShadow='0 2px 12px rgba(74, 110, 224, 0.2)'"
+            onblur="this.style.borderColor='#4a6ee0'; this.style.boxShadow='0 2px 8px rgba(74, 110, 224, 0.1)'"
+            onmouseover="this.style.borderColor='#3a5cd9'"
+            onmouseout="this.style.borderColor='#4a6ee0'"
+        >
+            <option value="">Select Withdraw Method</option>
+            <option value="JazzCash">JazzCash</option>
+            <option value="EasyPaisa">EasyPaisa</option>
+        </select>
+    
+            <div id="withdrawFields" style="display: none;">
+                <input id="withdrawHolder" placeholder="Account Holder Name">
+                <input id="withdrawNumber" placeholder="Account Number">
+            </div>
+    
             <button class="green-btn" onclick="submitWithdrawRequest()">Withdraw</button>
         </div>
     </div>
+    
 
     <div class="container" id="earning">
         <div class="section">
