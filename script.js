@@ -46,9 +46,6 @@ document.addEventListener('DOMContentLoaded', function() {
     hamburgerBtn.addEventListener('click', toggleMobileNav);
 });
 
-
-
-
 // Get reference code from URL if available
 const urlParams = new URLSearchParams(window.location.search);
 const referralCodeFromURL = urlParams.get('ref') || "";
@@ -89,6 +86,7 @@ function registerLogin() {
                 referredBy: refCode || null,
                 transactions: [],
                 plans: [],
+                hasBoughtPlan: false, // Track if user has bought any plan
                 createdAt: new Date().toISOString()
             };
 
@@ -233,13 +231,26 @@ function updateReferralBonus(refCode, amount) {
             if (user.refCode === refCode) {
                 const newEarnings = (user.refEarnings || 0) + amount;
                 database.ref('users/' + user.username + '/refEarnings').set(newEarnings);
+                
+                // Also update the balance
+                const newBalance = (user.balance || 0) + amount;
+                database.ref('users/' + user.username + '/balance').set(newBalance);
+                
+                // Add transaction record
+                const transaction = {
+                    type: 'referral',
+                    amount: amount,
+                    date: new Date().toISOString(),
+                    status: 'completed',
+                    referredUser: currentUser.username
+                };
+                
+                const transactions = [...(user.transactions || []), transaction];
+                database.ref('users/' + user.username + '/transactions').set(transactions);
             }
         });
     });
 }
-
-
-
 
 function updateTransactionList() {
     const transactionList = document.getElementById('transactionList');
@@ -271,6 +282,7 @@ function updateTransactionList() {
             <span ${amountClass}>${transaction.amount} PKR</span> - 
             ${formatDate(transaction.date)}
             ${transaction.status ? `(${transaction.status})` : ''}
+            ${transaction.referredUser ? `from ${transaction.referredUser}` : ''}
         `;
         transactionList.appendChild(li);
     });
@@ -292,7 +304,7 @@ function formatDate(dateString) {
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
 }
 
-// Plan functions
+// Plan functions with referral bonus
 function buyPlan(planId, amount, dailyProfit) {
     if (!currentUser) return;
     
@@ -337,12 +349,24 @@ function buyPlan(planId, amount, dailyProfit) {
     updates['/users/' + currentUser.username + '/plans'] = [...(currentUser.plans || []), plan];
     updates['/users/' + currentUser.username + '/transactions'] = [...(currentUser.transactions || []), transaction];
     
+    // Check if this is user's first plan purchase and they were referred by someone
+    if (!currentUser.hasBoughtPlan && currentUser.referredBy) {
+        updates['/users/' + currentUser.username + '/hasBoughtPlan'] = true;
+        
+        // Give referral bonus (10% of plan amount)
+        const referralBonus = Math.floor(amount * 0.10);
+        updateReferralBonus(currentUser.referredBy, referralBonus);
+    }
+    
     database.ref().update(updates)
         .then(() => {
             // Update local user data
             currentUser.balance = newBalance;
             currentUser.plans = [...(currentUser.plans || []), plan];
             currentUser.transactions = [...(currentUser.transactions || []), transaction];
+            if (!currentUser.hasBoughtPlan && currentUser.referredBy) {
+                currentUser.hasBoughtPlan = true;
+            }
             
             localStorage.setItem('hondaUser', JSON.stringify(currentUser));
             updateDashboard();
@@ -504,77 +528,79 @@ function submitWithdrawRequest() {
 }
 
 // Earning functions
-// Earning functions
 function receiveProfit() {
     if (!currentUser || !currentUser.plans || currentUser.plans.length === 0) {
         showPopup('No active plans to receive profit from');
         return;
     }
 
-    // Check if 24 hours have passed since last profit claim
-    const lastProfitTransaction = currentUser.transactions?.reverse().find(t => t.type === 'profit');
-    if (lastProfitTransaction) {
-        const lastClaimTime = new Date(lastProfitTransaction.date).getTime();
-        const currentTime = new Date().getTime();
-        const hoursSinceLastClaim = (currentTime - lastClaimTime) / (1000 * 60 * 60);
-        
-        if (hoursSinceLastClaim < 24) {
-            const hoursRemaining = Math.ceil(24 - hoursSinceLastClaim);
-            showPopup(`Please wait ${hoursRemaining} more hours before claiming next profit`);
-            return;
+    const now = Date.now();
+    let totalProfit = 0;
+    const updatedPlans = [];
+    const cooldownErrors = [];
+
+    for (let plan of currentUser.plans) {
+        if (plan.completed) {
+            updatedPlans.push(plan);
+            continue;
         }
+
+        const lastReceived = plan.lastReceived ? new Date(plan.lastReceived).getTime() : 0;
+        const elapsedHours = (now - lastReceived) / (1000 * 60 * 60);
+
+        if (elapsedHours < 24) {
+            const remaining = Math.ceil(24 - elapsedHours);
+            cooldownErrors.push(`• ${plan.name}: wait ${remaining}h`);
+            updatedPlans.push(plan);
+            continue;
+        }
+
+        // Add profit
+        totalProfit += plan.dailyProfit;
+
+        // Update plan
+        plan.daysCompleted = (plan.daysCompleted || 0) + 1;
+        if (plan.daysCompleted >= 100) {
+            plan.completed = true;
+        }
+
+        plan.lastReceived = new Date().toISOString();
+        updatedPlans.push(plan);
+    }
+
+    if (totalProfit === 0) {
+        showPopup(`No eligible plans for profit.\n${cooldownErrors.join('\n')}`);
+        return;
     }
 
     showLoader();
-    
-    // Calculate total daily profit from all active plans
-    let totalProfit = 0;
-    const updatedPlans = currentUser.plans.map(plan => {
-        if (!plan.completed) {
-            totalProfit += plan.dailyProfit;
-            
-            // Check if plan is completed (100 days)
-            const daysCompleted = (plan.daysCompleted || 0) + 1;
-            if (daysCompleted >= 100) {
-                plan.completed = true;
-            }
-            plan.daysCompleted = daysCompleted;
-        }
-        return plan;
-    });
-    
-    if (totalProfit === 0) {
-        hideLoader();
-        showPopup('No active plans to receive profit from');
-        return;
-    }
-    
+
     // Update user balance and transactions
     const newBalance = currentUser.balance + totalProfit;
-    
+
     const transaction = {
         type: 'profit',
         amount: totalProfit,
         date: new Date().toISOString(),
         status: 'completed'
     };
-    
+
     const updates = {};
-    updates['/users/' + currentUser.username + '/balance'] = newBalance;
-    updates['/users/' + currentUser.username + '/plans'] = updatedPlans;
-    updates['/users/' + currentUser.username + '/transactions'] = [...(currentUser.transactions || []), transaction];
-    
+    updates[`/users/${currentUser.username}/balance`] = newBalance;
+    updates[`/users/${currentUser.username}/plans`] = updatedPlans;
+    updates[`/users/${currentUser.username}/transactions`] = [...(currentUser.transactions || []), transaction];
+
     database.ref().update(updates)
         .then(() => {
-            // Update local user data
+            // Update local user object
             currentUser.balance = newBalance;
             currentUser.plans = updatedPlans;
             currentUser.transactions = [...(currentUser.transactions || []), transaction];
-            
+
             localStorage.setItem('hondaUser', JSON.stringify(currentUser));
             updateDashboard();
             hideLoader();
-            showPopup(`Daily profit of ${totalProfit} PKR received! Come back in 24 hours for next profit.`);
+            showPopup(`You received ${totalProfit} PKR profit!\nCome back in 24 hours for next claim.`);
         })
         .catch(error => {
             hideLoader();
@@ -642,60 +668,59 @@ function loadAdminPanel() {
             tbody.appendChild(tr);
         });
         
-      // Load withdraw requests
-  database.ref('withdrawRequests').once('value').then(snapshot => {
-    const requests = snapshot.val() || {};
-    const withdrawTable = document.getElementById('withdrawTable');
-    
-    // Create table header
-    withdrawTable.innerHTML = `
-        <thead>
-            <tr>
-                <th>Username</th>
-                <th>Amount</th>
-                <th>Method</th>
-                <th>Account Holder</th>
-                <th>Account Number</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    `;
-    
-    const tbody = withdrawTable.querySelector('tbody');
-    
-    // Add each request to table
-    Object.entries(requests).forEach(([key, request]) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${request.username}</td>
-            <td>${request.amount} PKR</td>
-            <td>${request.method || 'N/A'}</td>
-            <td>${request.accountHolder}</td>
-            <td>${request.accountNumber}</td>
-            <td>${formatDate(request.date)}</td>
-            <td>${request.status}</td>
-            <td>
-                ${request.status === 'pending' ? `
-                    <button onclick="approveWithdraw('${key}', '${request.username}', ${request.amount})" style="padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        Approve
-                    </button>
-                    <button onclick="rejectWithdraw('${key}', '${request.username}', ${request.amount})" style="padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        Reject
-                    </button>
-                ` : ''}
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-});
-
-        
-        // Show admin content
-        document.getElementById('adminContent').classList.remove('hidden');
-        hideLoader();
+        // Load withdraw requests
+        database.ref('withdrawRequests').once('value').then(snapshot => {
+            const requests = snapshot.val() || {};
+            const withdrawTable = document.getElementById('withdrawTable');
+            
+            // Create table header
+            withdrawTable.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Account Holder</th>
+                        <th>Account Number</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            
+            const tbody = withdrawTable.querySelector('tbody');
+            
+            // Add each request to table
+            Object.entries(requests).forEach(([key, request]) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${request.username}</td>
+                    <td>${request.amount} PKR</td>
+                    <td>${request.method || 'N/A'}</td>
+                    <td>${request.accountHolder}</td>
+                    <td>${request.accountNumber}</td>
+                    <td>${formatDate(request.date)}</td>
+                    <td>${request.status}</td>
+                    <td>
+                        ${request.status === 'pending' ? `
+                            <button onclick="approveWithdraw('${key}', '${request.username}', ${request.amount})" style="padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Approve
+                            </button>
+                            <button onclick="rejectWithdraw('${key}', '${request.username}', ${request.amount})" style="padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Reject
+                            </button>
+                        ` : ''}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Show admin content
+            document.getElementById('adminContent').classList.remove('hidden');
+            hideLoader();
+        });
     }).catch(error => {
         hideLoader();
         showPopup('Error loading admin panel: ' + error.message);
@@ -807,42 +832,6 @@ function rejectWithdraw(requestKey, username, amount) {
 }
 
 // Helper functions
-function generateRefCode() {
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
-
-function updateReferralBonus(refCode, amount) {
-    // Find user by refCode and update their referral earnings
-    database.ref('users').orderByChild('refCode').equalTo(refCode).once('value')
-        .then(snapshot => {
-            if (snapshot.exists()) {
-                const userData = snapshot.val();
-                const username = Object.keys(userData)[0];
-                const user = userData[username];
-                
-                const newRefEarnings = (user.refEarnings || 0) + amount;
-                
-                // Create transaction for referral bonus
-                const transaction = {
-                    type: 'referral',
-                    amount: amount,
-                    date: new Date().toISOString(),
-                    status: 'completed',
-                    referredUser: currentUser.username
-                };
-                
-                const updates = {};
-                updates['/users/' + username + '/refEarnings'] = newRefEarnings;
-                updates['/users/' + username + '/transactions'] = [...(user.transactions || []), transaction];
-                
-                return database.ref().update(updates);
-            }
-        })
-        .catch(error => {
-            console.error('Error updating referral bonus:', error);
-        });
-}
-
 function showLoader() {
     loader.style.display = 'flex';
 }
