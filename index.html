@@ -45,8 +45,8 @@
             <a onclick="showSection('me')">
                 <i class="fas fa-user-circle"></i> Account
             </a>
-            <a onclick="showSection('admin')">
-                <i class="fas fa-user-shield"></i> Admin
+            <a onclick="showSection('Help')">
+                <i class="fas fa-user-shield"></i> Help
             </a>
             <a onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i> Logout
@@ -71,8 +71,8 @@
             <a onclick="showSection('me')">
                 <i class="fas fa-user-circle"></i> Account
             </a>
-            <a onclick="showSection('admin')">
-                <i class="fas fa-user-shield"></i> Admin
+            <a onclick="showSection('Help')">
+                <i class="fas fa-user-shield"></i> Help
             </a>
             <a onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i> Logout
@@ -223,13 +223,13 @@
             <p class="input-note"><b>Please write your correct TILL ID. Otherwise recharge request will fail.</b></p>
             
             <div class="payment-method easypaisa">
-                <strong>900 PKR - Easypaisa</strong><br>
-                Account No: <strong>03434530019</strong><br>
-                Account Holder: <strong>Sohaib Hassan</strong>
+                <strong>900 PKR - Jazzcash</strong><br>
+                Account No: <strong>03267166959</strong><br>
+                Account Holder: <strong>M qasim</strong>
             </div>
             
-            <input id="trxId" placeholder="TRX ID" type="text" maxlength="11" inputmode="numeric" pattern="\d*" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11)">
-            <p class="input-note"><b>Please write your correct TRX ID. Otherwise recharge request will fail.</b></p>
+            <input id="trxId" placeholder="TILL ID" type="text" maxlength="12" inputmode="numeric" pattern="\d*" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12)">
+            <p class="input-note"><b>Please write your correct TILL ID. Otherwise recharge request will fail.</b></p>
             
             <div class="file-upload">
                 <label for="paymentProof">Payment Proof (Screenshot/Image)</label>
@@ -294,7 +294,7 @@
             <div class="earnings-box">
                 <h3><i class="fas fa-coins"></i> Daily Earnings</h3>
                 <p><strong>Plan:</strong> <span id="planName">Plan 1</span></p>
-                <p><strong>Daily Profit:</strong> <span id="dailyProfit">100</span> PKR</p>
+                <p><strong>Daily Profit:</strong> <span id="dailyProfit">40</span> PKR</p>
                 <button class="earnings-button" onclick="receiveProfit()">
                     <i class="fas fa-hand-holding-usd"></i> Receive Daily Profit
                 </button>
@@ -309,13 +309,16 @@
                 <p>Username: <span id="displayUsername"></span></p>
                 <p>Registration Date: <span id="regDate"></span></p>
                 <p>Referral Code: <span id="displayRefCode"></span></p>
+                <h4>Referal Instructions</h4>
+                <p>Invite a person and get cashback of 10%.</p>
+                <p>When you invite a person and your invite person buy a plan .You recieve a 10% of his investments </p>
             </div>
         </div>
     </div>
 
-    <div class="container" id="admin">
+    <div class="container" id="Help">
         <div class="section">
-            <h3><i class="fas fa-user-shield"></i> Introduction</h3>
+            <h3><i class="fas fa-user-shield"></i>Introduction</h3>
             <input type="password" id="adminPass" placeholder="Enter Admin Password">
             <button class="green-btn" onclick="loadAdminPanel()">Enter</button>
             <div id="adminContent" class="hidden">
