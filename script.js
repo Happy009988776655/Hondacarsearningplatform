@@ -22,7 +22,7 @@ const database = firebase.database();
 // Global variables
 let currentUser = null;
 let userData = null;
-let adminPassword = "null"; // Change this to a more secure password in production
+let adminPassword = "null"; // 
 
 // DOM elements
 const authSection = document.getElementById('authSection');
@@ -44,6 +44,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up event listeners
     hamburgerBtn.addEventListener('click', toggleMobileNav);
+    
+    // Set up navigation for history pages
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', function() {
+            const sectionId = this.getAttribute('data-section');
+            showSection(sectionId);
+            
+            // Load specific data when these sections are shown
+            if (sectionId === 'RechargeHistory') {
+                loadUserRechargeHistory();
+            } else if (sectionId === 'WithdrawHistory') {
+                loadUserWithdrawHistory();
+            }
+        });
+    });
 });
 
 // Get reference code from URL if available
@@ -80,24 +95,21 @@ function registerLogin() {
             const newUser = {
                 username: username,
                 password: password,
-                balance: 5, // Registration bonus
+                balance: 0, // Removed registration bonus
                 refEarnings: 0,
                 refCode: generateRefCode(),
                 referredBy: refCode || null,
                 transactions: [],
                 plans: [],
                 hasBoughtPlan: false, // Track if user has bought any plan
+                rechargeHistory: [],
+                withdrawHistory: [],
                 createdAt: new Date().toISOString()
             };
 
             // Save user to database
             database.ref('users/' + username).set(newUser)
                 .then(() => {
-                    // If referred by someone, update their referral earnings
-                    if (refCode) {
-                        updateReferralBonus(refCode, 5);
-                    }
-
                     loginUser(newUser);
                 })
                 .catch(error => {
@@ -175,6 +187,10 @@ function showSection(sectionId) {
         document.getElementById('displayUsername').textContent = currentUser.username;
     } else if (sectionId === 'admin') {
         document.getElementById('adminContent').classList.add('hidden');
+    } else if (sectionId === 'RechargeHistory') {
+        loadUserRechargeHistory();
+    } else if (sectionId === 'WithdrawHistory') {
+        loadUserWithdrawHistory();
     }
 
     // Close mobile nav if open
@@ -222,36 +238,7 @@ function generateRefCode() {
     return code;
 }
 
-// Dummy function to simulate referral bonus
-function updateReferralBonus(refCode, amount) {
-    // Search all users for matching refCode
-    database.ref('users').once('value', snapshot => {
-        snapshot.forEach(child => {
-            const user = child.val();
-            if (user.refCode === refCode) {
-                const newEarnings = (user.refEarnings || 0) + amount;
-                database.ref('users/' + user.username + '/refEarnings').set(newEarnings);
-                
-                // Also update the balance
-                const newBalance = (user.balance || 0) + amount;
-                database.ref('users/' + user.username + '/balance').set(newBalance);
-                
-                // Add transaction record
-                const transaction = {
-                    type: 'referral',
-                    amount: amount,
-                    date: new Date().toISOString(),
-                    status: 'completed',
-                    referredUser: currentUser.username
-                };
-                
-                const transactions = [...(user.transactions || []), transaction];
-                database.ref('users/' + user.username + '/transactions').set(transactions);
-            }
-        });
-    });
-}
-
+// Update transaction list function
 function updateTransactionList() {
     const transactionList = document.getElementById('transactionList');
     transactionList.innerHTML = '';
@@ -353,8 +340,8 @@ function buyPlan(planId, amount, dailyProfit) {
     if (!currentUser.hasBoughtPlan && currentUser.referredBy) {
         updates['/users/' + currentUser.username + '/hasBoughtPlan'] = true;
         
-        // Give referral bonus (10% of plan amount)
-        const referralBonus = Math.floor(amount * 0.10);
+        // Give referral bonus (50 PKR for first plan purchase)
+        const referralBonus = 50;
         updateReferralBonus(currentUser.referredBy, referralBonus);
     }
     
@@ -379,14 +366,45 @@ function buyPlan(planId, amount, dailyProfit) {
         });
 }
 
+// Updated referral bonus function (50 PKR when referred user buys first plan)
+function updateReferralBonus(refCode, amount) {
+    // Search all users for matching refCode
+    database.ref('users').once('value', snapshot => {
+        snapshot.forEach(child => {
+            const user = child.val();
+            if (user.refCode === refCode) {
+                const newEarnings = (user.refEarnings || 0) + amount;
+                database.ref('users/' + user.username + '/refEarnings').set(newEarnings);
+                
+                // Also update the balance
+                const newBalance = (user.balance || 0) + amount;
+                database.ref('users/' + user.username + '/balance').set(newBalance);
+                
+                // Add transaction record
+                const transaction = {
+                    type: 'referral',
+                    amount: amount,
+                    date: new Date().toISOString(),
+                    status: 'completed',
+                    referredUser: currentUser.username
+                };
+                
+                const transactions = [...(user.transactions || []), transaction];
+                database.ref('users/' + user.username + '/transactions').set(transactions);
+            }
+        });
+    });
+}
+
 // Recharge functions
 async function submitRechargeRequest() {
     const tillId = document.getElementById('tillId').value.trim();
-    const trxId = document.getElementById('trxId').value.trim();
+    const depositAmount = document.getElementById('depositAmount').value;
     const paymentProof = document.getElementById('paymentProof').files[0];
     
-    if (!tillId && !trxId) {
-        showPopup('Please provide either TILL ID or TRX ID');
+    // Validation
+    if (!tillId) {
+        showPopup('Please provide your Easypaisa Till ID');
         return;
     }
     
@@ -394,10 +412,6 @@ async function submitRechargeRequest() {
         showPopup('Please upload payment proof');
         return;
     }
-    
-    const amount = tillId ? 500 : 900; // 500 for Jazzcash, 900 for Easypaisa
-    const paymentMethod = tillId ? 'Jazzcash' : 'Easypaisa';
-    const transactionId = tillId || trxId;
     
     showLoader();
     
@@ -408,12 +422,13 @@ async function submitRechargeRequest() {
         // Create recharge request with image URL
         const rechargeRequest = {
             username: currentUser.username,
-            amount: amount,
-            paymentMethod: paymentMethod,
-            transactionId: transactionId,
+            amount: parseInt(depositAmount),
+            paymentMethod: 'Easypaisa',
+            transactionId: tillId,
             paymentProof: imageUrl,
             date: new Date().toISOString(),
-            status: 'pending'
+            status: 'pending',
+            selectedAmount: depositAmount
         };
         
         // Add to recharge requests
@@ -421,16 +436,37 @@ async function submitRechargeRequest() {
         const updates = {};
         updates['/rechargeRequests/' + newRequestKey] = rechargeRequest;
         
+        // Add to user's recharge history
+        const userRecharge = {
+            amount: parseInt(depositAmount),
+            date: new Date().toISOString(),
+            status: 'pending',
+            requestId: newRequestKey,
+            paymentMethod: 'Easypaisa',
+            transactionId: tillId
+        };
+        
+        updates['/users/' + currentUser.username + '/rechargeHistory'] = [...(currentUser.rechargeHistory || []), userRecharge];
+        
         await database.ref().update(updates);
         
+        // Update local user data
+        currentUser.rechargeHistory = [...(currentUser.rechargeHistory || []), userRecharge];
+        localStorage.setItem('hondaUser', JSON.stringify(currentUser));
+        
         hideLoader();
-        showPopup('Recharge request submitted successfully!');
+        showPopup(`Recharge request submitted successfully!\nAmount: ${depositAmount} PKR\nTill ID: ${tillId}`);
+        
+        // Reset form
         document.getElementById('tillId').value = '';
-        document.getElementById('trxId').value = '';
         document.getElementById('paymentProof').value = '';
+        
+        // Update recharge history
+        loadUserRechargeHistory();
     } catch (error) {
         hideLoader();
         showPopup('Error submitting request: ' + error.message);
+        console.error('Recharge error:', error);
     }
 }
 
@@ -455,13 +491,13 @@ async function uploadPaymentProof(file) {
     return data.secure_url;
 }
 
+// Withdraw functions
 function toggleWithdrawFields() {
     const method = document.getElementById('withdrawMethod').value;
     const fieldsDiv = document.getElementById('withdrawFields');
     fieldsDiv.style.display = method ? 'block' : 'none';
 }
 
-// Withdraw function with method and limits
 function submitWithdrawRequest() {
     const amount = parseFloat(document.getElementById('withdrawAmount').value);
     const method = document.getElementById('withdrawMethod').value;
@@ -509,8 +545,29 @@ function submitWithdrawRequest() {
     const updates = {};
     updates['/withdrawRequests/' + newRequestKey] = withdrawRequest;
 
+    // Add to user's withdraw history
+    const userWithdraw = {
+        amount: amount,
+        date: new Date().toISOString(),
+        status: 'pending',
+        method: method,
+        accountHolder: holder,
+        accountNumber: number,
+        requestId: newRequestKey
+    };
+    
+    updates['/users/' + currentUser.username + '/withdrawHistory'] = [...(currentUser.withdrawHistory || []), userWithdraw];
+    
+    // Deduct amount from balance (temporarily until approved)
+    updates['/users/' + currentUser.username + '/balance'] = currentUser.balance - amount;
+
     database.ref().update(updates)
         .then(() => {
+            // Update local user data
+            currentUser.withdrawHistory = [...(currentUser.withdrawHistory || []), userWithdraw];
+            currentUser.balance -= amount;
+            localStorage.setItem('hondaUser', JSON.stringify(currentUser));
+            
             hideLoader();
             showPopup('Withdrawal request submitted successfully!');
             
@@ -520,6 +577,10 @@ function submitWithdrawRequest() {
             document.getElementById('withdrawHolder').value = '';
             document.getElementById('withdrawNumber').value = '';
             document.getElementById('withdrawFields').style.display = 'none';
+            
+            // Update dashboard and history
+            updateDashboard();
+            loadUserWithdrawHistory();
         })
         .catch(error => {
             hideLoader();
@@ -606,6 +667,73 @@ function receiveProfit() {
             hideLoader();
             showPopup('Error receiving profit: ' + error.message);
         });
+}
+
+// History functions
+function loadUserRechargeHistory() {
+    if (!currentUser) return;
+    
+    const tbody = document.getElementById('userRechargeTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    
+    if (!currentUser.rechargeHistory || currentUser.rechargeHistory.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">No recharge history found</td></tr>';
+        return;
+    }
+    
+    // Sort by date (newest first)
+    const sortedHistory = [...currentUser.rechargeHistory].sort((a, b) => 
+        new Date(b.date) - new Date(a.date));
+    
+    sortedHistory.forEach(item => {
+        const tr = document.createElement('tr');
+        
+        let statusClass = '';
+        if (item.status === 'approved') statusClass = 'status-approved';
+        else if (item.status === 'rejected') statusClass = 'status-rejected';
+        else statusClass = 'status-pending';
+        
+        tr.innerHTML = `
+            <td>${item.amount} PKR</td>
+            <td>${item.paymentMethod || 'Easypaisa'}</td>
+            <td>${formatDate(item.date)}</td>
+            <td class="${statusClass}">${item.status}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function loadUserWithdrawHistory() {
+    if (!currentUser) return;
+    
+    const tbody = document.getElementById('userWithdrawTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    
+    if (!currentUser.withdrawHistory || currentUser.withdrawHistory.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">No withdraw history found</td></tr>';
+        return;
+    }
+    
+    // Sort by date (newest first)
+    const sortedHistory = [...currentUser.withdrawHistory].sort((a, b) => 
+        new Date(b.date) - new Date(a.date));
+    
+    sortedHistory.forEach(item => {
+        const tr = document.createElement('tr');
+        
+        let statusClass = '';
+        if (item.status === 'approved') statusClass = 'status-approved';
+        else if (item.status === 'rejected') statusClass = 'status-rejected';
+        else statusClass = 'status-pending';
+        
+        tr.innerHTML = `
+            <td>${item.amount} PKR</td>
+            <td>${item.method || 'N/A'}</td>
+            <td>${formatDate(item.date)}</td>
+            <td class="${statusClass}">${item.status}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 // Admin functions
@@ -751,6 +879,12 @@ function approveRecharge(requestKey, username, amount) {
         updates['/users/' + username + '/balance'] = newBalance;
         updates['/users/' + username + '/transactions'] = [...(user.transactions || []), transaction];
         
+        // Update user's recharge history
+        const rechargeIndex = user.rechargeHistory.findIndex(r => r.requestId === requestKey);
+        if (rechargeIndex !== -1) {
+            updates['/users/' + username + '/rechargeHistory/' + rechargeIndex + '/status'] = 'approved';
+        }
+        
         return database.ref().update(updates);
     }).then(() => {
         hideLoader();
@@ -767,16 +901,33 @@ function rejectRecharge(requestKey) {
     
     showLoader();
     
-    database.ref('rechargeRequests/' + requestKey + '/status').set('rejected')
-        .then(() => {
-            hideLoader();
-            showPopup('Recharge rejected!');
-            loadAdminPanel(); // Refresh admin panel
-        })
-        .catch(error => {
-            hideLoader();
-            showPopup('Error rejecting recharge: ' + error.message);
-        });
+    // Get the request to find the username
+    database.ref('rechargeRequests/' + requestKey).once('value').then(snapshot => {
+        const request = snapshot.val();
+        if (!request) throw new Error('Request not found');
+        
+        const updates = {};
+        updates['/rechargeRequests/' + requestKey + '/status'] = 'rejected';
+        
+        // Update user's recharge history
+        return database.ref('users/' + request.username + '/rechargeHistory').once('value')
+            .then(snapshot => {
+                const rechargeHistory = snapshot.val() || [];
+                const rechargeIndex = rechargeHistory.findIndex(r => r.requestId === requestKey);
+                if (rechargeIndex !== -1) {
+                    updates['/users/' + request.username + '/rechargeHistory/' + rechargeIndex + '/status'] = 'rejected';
+                }
+                
+                return database.ref().update(updates);
+            });
+    }).then(() => {
+        hideLoader();
+        showPopup('Recharge rejected!');
+        loadAdminPanel(); // Refresh admin panel
+    }).catch(error => {
+        hideLoader();
+        showPopup('Error rejecting recharge: ' + error.message);
+    });
 }
 
 function approveWithdraw(requestKey, username, amount) {
@@ -788,30 +939,26 @@ function approveWithdraw(requestKey, username, amount) {
     const updates = {};
     updates['/withdrawRequests/' + requestKey + '/status'] = 'approved';
     
-    // Update user balance and transactions
-    database.ref('users/' + username).once('value').then(snapshot => {
-        const user = snapshot.val();
-        const newBalance = (user.balance || 0) - amount;
-        
-        const transaction = {
-            type: 'withdrawal',
-            amount: amount,
-            date: new Date().toISOString(),
-            status: 'completed'
-        };
-        
-        updates['/users/' + username + '/balance'] = newBalance;
-        updates['/users/' + username + '/transactions'] = [...(user.transactions || []), transaction];
-        
-        return database.ref().update(updates);
-    }).then(() => {
-        hideLoader();
-        showPopup('Withdrawal approved successfully!');
-        loadAdminPanel(); // Refresh admin panel
-    }).catch(error => {
-        hideLoader();
-        showPopup('Error approving withdrawal: ' + error.message);
-    });
+    // Update user's withdraw history
+    database.ref('users/' + username + '/withdrawHistory').once('value')
+        .then(snapshot => {
+            const withdrawHistory = snapshot.val() || [];
+            const withdrawIndex = withdrawHistory.findIndex(w => w.requestId === requestKey);
+            if (withdrawIndex !== -1) {
+                updates['/users/' + username + '/withdrawHistory/' + withdrawIndex + '/status'] = 'approved';
+            }
+            
+            return database.ref().update(updates);
+        })
+        .then(() => {
+            hideLoader();
+            showPopup('Withdrawal approved successfully!');
+            loadAdminPanel(); // Refresh admin panel
+        })
+        .catch(error => {
+            hideLoader();
+            showPopup('Error approving withdrawal: ' + error.message);
+        });
 }
 
 function rejectWithdraw(requestKey, username, amount) {
@@ -819,16 +966,31 @@ function rejectWithdraw(requestKey, username, amount) {
     
     showLoader();
     
-    database.ref('withdrawRequests/' + requestKey + '/status').set('rejected')
-        .then(() => {
-            hideLoader();
-            showPopup('Withdrawal rejected!');
-            loadAdminPanel(); // Refresh admin panel
-        })
-        .catch(error => {
-            hideLoader();
-            showPopup('Error rejecting withdrawal: ' + error.message);
-        });
+    const updates = {};
+    updates['/withdrawRequests/' + requestKey + '/status'] = 'rejected';
+    
+    // Update user's withdraw history and return the amount
+    database.ref('users/' + username).once('value').then(snapshot => {
+        const user = snapshot.val();
+        
+        // Find the withdraw request in user's history
+        const withdrawIndex = user.withdrawHistory.findIndex(w => w.requestId === requestKey);
+        if (withdrawIndex !== -1) {
+            updates['/users/' + username + '/withdrawHistory/' + withdrawIndex + '/status'] = 'rejected';
+        }
+        
+        // Return the amount to balance
+        updates['/users/' + username + '/balance'] = (user.balance || 0) + amount;
+        
+        return database.ref().update(updates);
+    }).then(() => {
+        hideLoader();
+        showPopup('Withdrawal rejected and amount returned to balance!');
+        loadAdminPanel(); // Refresh admin panel
+    }).catch(error => {
+        hideLoader();
+        showPopup('Error rejecting withdrawal: ' + error.message);
+    });
 }
 
 // Helper functions
