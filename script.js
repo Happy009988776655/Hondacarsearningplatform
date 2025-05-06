@@ -22,7 +22,7 @@ const database = firebase.database();
 // Global variables
 let currentUser = null;
 let userData = null;
-let adminPassword = "null"; // 
+let adminPassword = "null"; // Change this to a more secure password in production
 
 // DOM elements
 const authSection = document.getElementById('authSection');
@@ -509,10 +509,8 @@ function submitWithdrawRequest() {
         return;
     }
 
-    if (amount < 1400 || amount > 20000) {
-        showPopup('Withdrawal amount must be between PKR 1400 and PKR 20,000');
-        return;
-    }
+    
+    
 
     if (!method) {
         showPopup('Please select a withdrawal method');
